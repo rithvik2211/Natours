@@ -2,15 +2,30 @@ const User = require('./../models/user_model');
 const catchAync = require('./../utils/catchAsync');
 const jwt = require('jsonwebtoken');
 const AppError = require('./../utils/appError');
-
+const crypto = require('crypto');
 const send_email = require('./../utils/email');
 
 const { promisify } = require('util');
 const { AsyncResource } = require('async_hooks');
 
+const create_send_token = (user, statuscode, res) => {
+
+    const token = signToken(user._id);
+
+    res.status(200).json({
+        status: 'success',
+        token,
+        data: {
+            user
+        }
+    });
+}
+
 const signToken = id => {
     return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRE })
 }
+
+
 exports.signup = catchAync(async (req, res, next) => {
     const new_user = await User.create({
         name: req.body.name,
@@ -21,14 +36,9 @@ exports.signup = catchAync(async (req, res, next) => {
         role: req.body.role
     });
 
-    const token = signToken(new_user._id);
-    res.status(201).json({
-        status: 'success',
-        token,
-        data: {
-            user: new_user
-        }
-    });
+    create_send_token(new_user, 201, res);
+
+
 });
 
 
@@ -42,15 +52,11 @@ exports.login = catchAync(async (req, res, next) => {
 
     const user = await User.findOne({ email }).select('+password');
 
-    const token = signToken(user._id);
-
     if (!user || !(await user.correct_password(password, user.password))) {
         return next(new AppError('Incorrect email or password', 401));
     }
-    res.status(200).json({
-        status: 'success',
-        token
-    });
+
+    create_send_token(user, 200, res);
 });
 
 exports.protect = catchAync(async (req, res, next) => {
@@ -129,6 +135,44 @@ exports.forgot_password = catchAync(async (req, res, next) => {
     }
 })
 
-exports.reset_password = (req, res, next) => {
+exports.reset_password = catchAync(async (req, res, next) => {
 
-}
+    const hashed_token = crypto.createHash('sha256').update(req.params.token).digest('hex');
+
+    const user = await User.findOne({ password_reset_token: hashed_token, password_reset_expire: { $gt: Date.now() } });
+
+    if (!user) {
+        return next(new AppError('Token is invalid or has expired', 400));
+    }
+
+    user.password = req.body.password;
+    user.password_confirm = req.body.password_confirm;
+    user.password_reset_expire = undefined;
+    user.password_reset_token = undefined;
+
+    await user.save();
+
+    create_send_token(user, 200, res);
+
+});
+
+
+exports.update_password = catchAync(async (req, res, next) => {
+    const user = await User.findById(req.user.id).select('+password');
+    // const password = req.body.password;
+
+    if (!(await user.correct_password(req.body.current_password, user.password))) {
+        return next(new AppError('User not found.', 401));
+    }
+
+
+
+    user.password = req.body.password;
+    user.password_confirm = req.body.password_confirm;
+
+    await user.save();
+
+    create_send_token(user, 200, res);
+
+
+});

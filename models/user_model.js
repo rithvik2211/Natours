@@ -72,6 +72,12 @@ user_schema.methods.changed_password_after = function (JWTTimestamp) {
     }
 }
 
+user_schema.pre('save', function (next) {
+    if (!this.isModified('password') || this.isNew) return next();
+
+    this.password_changed_at = Date.now() - 1000;
+    next();
+});
 
 user_schema.methods.create_password_reset_token = function () {
     const reset_token = crypto.randomBytes(32).toString('hex');
@@ -81,6 +87,9 @@ user_schema.methods.create_password_reset_token = function () {
 
     return reset_token;
 }
+
+
+
 
 const User = mongoose.model('User', user_schema);
 
