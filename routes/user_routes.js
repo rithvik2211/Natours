@@ -13,6 +13,9 @@ router.post('/forgot-password', authControllers.forgot_password);
 router.patch('/reset-password/:token', authControllers.reset_password);
 router.patch('/update-password', authControllers.protect, authControllers.update_password);
 
+router.patch('/update-me', authControllers.protect, userControllers.update_me);
+router.delete('/delete-me', authControllers.protect, userControllers.delete_me);
+
 
 router
     .route('/')

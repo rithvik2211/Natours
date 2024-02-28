@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
 const crypto = require('crypto');
+const { type } = require('os');
 
 
 const user_schema = mongoose.Schema({
@@ -43,7 +44,12 @@ const user_schema = mongoose.Schema({
     },
     password_changed_at: Date,
     password_reset_token: String,
-    password_reset_expire: Date
+    password_reset_expire: Date,
+    active: {
+        type: Boolean,
+        default: true,
+        select: false
+    }
 
 });
 
@@ -88,7 +94,10 @@ user_schema.methods.create_password_reset_token = function () {
     return reset_token;
 }
 
-
+user_schema.pre('find', function (next) {
+    this.find({ active: { $ne: false } });
+    next();
+});
 
 
 const User = mongoose.model('User', user_schema);

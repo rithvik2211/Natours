@@ -11,6 +11,18 @@ const { AsyncResource } = require('async_hooks');
 const create_send_token = (user, statuscode, res) => {
 
     const token = signToken(user._id);
+    const cookie_optns = {
+        expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRY * 24 * 60 * 60 * 1000),
+        // secure: true,
+        httpOnly: true
+    }
+
+    if (process.env.NODE_ENV === "production") cookie_optns.secure = true;
+
+
+    res.cookie('jwt', token, cookie_optns);
+
+    user.password = undefined;
 
     res.status(200).json({
         status: 'success',
