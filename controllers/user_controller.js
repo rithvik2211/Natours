@@ -1,6 +1,7 @@
 const AppError = require('../utils/appError');
 const User = require('./../models/user_model');
 const catchAync = require('./../utils/catchAsync');
+const factory = require('./handler_factory');
 
 
 const filerObj = (obj, ...allowed_fields) => {
@@ -13,17 +14,7 @@ const filerObj = (obj, ...allowed_fields) => {
 }
 
 // Route Handlers 
-exports.get_all_users = catchAync(async (req, res, next) => {
-    const users = await User.find();
-    res
-        .status(200)
-        .json({
-            status: 'success',
-            // requestedAt: req.requestTime,
-            results: users.length,
-            data: { users }
-        });
-});
+exports.get_all_users = factory.get_all(User);
 
 exports.update_me = catchAync(async (req, res, next) => {
     if (req.body.password || req.body.password_confirm) {
@@ -44,36 +35,15 @@ exports.update_me = catchAync(async (req, res, next) => {
     });
 
 });
+exports.get_me = (req, res, next) => {
 
-exports.get_user = (req, res) => {
-    res.status(500).json({
-        status: 'error',
-        message: 'not yet created'
-    })
-};
+    req.params.id = req.user._id;
+    next();
+}
 
-exports.update_user = (req, res) => {
-    res.status(500).json({
-        status: 'error',
-        message: 'not yet created'
-    })
-};
-
-exports.post_user = (req, res) => {
-    // console.log(req.body);
-    res.status(500).json({
-        status: 'error',
-        message: 'not yet created'
-    })
-};
-
-exports.patch_user = (req, res) => {
-    // console.log(req.body);
-    res.status(500).json({
-        status: 'error',
-        message: 'not yet created'
-    })
-};
+exports.get_user = factory.get_one(User);
+exports.update_user = factory.update_one(User);
+exports.delete_user = factory.del_one(User);
 
 exports.delete_me = catchAync(async (req, res, next) => {
     await User.findByIdAndUpdate(req.user.id, { active: false });
