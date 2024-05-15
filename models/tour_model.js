@@ -149,12 +149,12 @@ tour_schema.pre(/^find/, function (next) {
     next();
 });
 
-tour_schema.pre('aggregate', function (next) {
+// tour_schema.pre('aggregate', function (next) {
 
-    // pipeline is function which shows our input array 
-    this.pipeline().unshift({ $match: { secretTour: { $ne: true } } });
-    next();
-});
+//     // pipeline is function which shows our input array 
+//     this.pipeline().unshift({ $match: { secretTour: { $ne: true } } });
+//     next();
+// });
 
 
 

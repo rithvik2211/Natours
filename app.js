@@ -6,20 +6,30 @@ const xss = require('xss-clean');
 const hpp = require('hpp');
 const fs = require('fs');
 const morgan = require('morgan');
+const path = require('path');
+const cookieParser = require('cookie-parser');
+
+
 const AppError = require('./utils/appError');
 const global_error_handler = require('./controllers/error_controller');
-
-
-
 
 
 const tourRouter = require('./routes/tour_routes');
 const userRouter = require('./routes/user_routes');
 const reviewRouter = require('./routes/review_routes');
+const viewRouter = require('./routes/viewRoutes');
 
 const app = express();
 
-app.use(helmet());
+app.set('view engine', 'pug');
+app.set('views', path.join(__dirname, 'views'));
+
+app.use(
+    helmet({
+        contentSecurityPolicy: false, // Disable CSP middleware
+    })
+);
+
 if (process.env.NODE_ENV === 'development') {
     app.use(morgan('dev'));
 }
@@ -33,7 +43,10 @@ const limiter = rateLimit({
 
 app.use('/api', limiter);
 
+// Body parser, reading data from body into req.body
 app.use(express.json({ limit: '10kb' }));
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
+app.use(cookieParser());
 
 // PREVENT NOSQL INJECTION
 app.use(mongo_sanitize());
@@ -43,7 +56,14 @@ app.use(xss());
 
 // PREVENT PARAMETER POLLUTION
 app.use(hpp({
-    whitelist: ['duration', 'ratingQunatity', 'ratingAverage', 'maxgroupSize', 'difficulty', 'price']
+    whitelist: [
+        'duration',
+        'ratingQunatity',
+        'ratingAverage',
+        'maxgroupSize',
+        'difficulty',
+        'price'
+    ]
 }));
 
 
@@ -54,7 +74,7 @@ app.use((req, res, next) => {
     next();
 });
 
-
+app.use('/', viewRouter);
 app.use('/api/v1/tours', tourRouter);
 app.use('/api/v1/user', userRouter);
 app.use('/api/v1/reviews', reviewRouter);
@@ -63,7 +83,7 @@ app.all('*', (req, res, next) => {
     // res.status(404).json({
     //     status: 'fail',
     //     message: `can't find ${req.originalUrl} on this server!`
-    // });
+    // });  
     next(new AppError(`can't find ${req.originalUrl} on this server!`, 404));
 });
 

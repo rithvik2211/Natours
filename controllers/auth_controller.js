@@ -15,7 +15,7 @@ const create_send_token = (user, statuscode, res) => {
         expires: new Date(Date.now() + process.env.JWT_COOKIE_EXPIRY * 24 * 60 * 60 * 1000),
         // secure: true,
         httpOnly: true
-    }
+    };
 
     if (process.env.NODE_ENV === "production") cookie_optns.secure = true;
 
@@ -31,11 +31,11 @@ const create_send_token = (user, statuscode, res) => {
             user
         }
     });
-}
+};
 
 const signToken = id => {
-    return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRE })
-}
+    return jwt.sign({ id }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRE });
+};
 
 
 exports.signup = catchAync(async (req, res, next) => {
@@ -100,6 +100,36 @@ exports.protect = catchAync(async (req, res, next) => {
     next();
 });
 
+// Only for rendered pages, no errors!
+exports.isLoggedIn = async (req, res, next) => {
+    if (req.cookies.jwt) {
+        try {
+            // 1) verify token
+            const decoded = await promisify(jwt.verify)(
+                req.cookies.jwt,
+                process.env.JWT_SECRET
+            );
+
+            // 2) Check if user still exists
+            const currentUser = await User.findById(decoded.id);
+            if (!currentUser) {
+                return next();
+            }
+
+            // 3) Check if user changed password after the token was issued
+            if (currentUser.changedPasswordAfter(decoded.iat)) {
+                return next();
+            }
+
+            // THERE IS A LOGGED IN USER
+            res.locals.user = currentUser;
+            return next();
+        } catch (err) {
+            return next();
+        }
+    }
+    next();
+};
 
 exports.restrict_to = (...roles) => {
     return (req, res, next) => {
@@ -108,8 +138,8 @@ exports.restrict_to = (...roles) => {
         }
 
         next();
-    }
-}
+    };
+};
 
 
 exports.forgot_password = catchAync(async (req, res, next) => {
@@ -137,15 +167,15 @@ exports.forgot_password = catchAync(async (req, res, next) => {
         res.status(200).json({
             status: 'success',
             message: 'Token sent to email'
-        })
+        });
 
     } catch (error) {
         user.password_reset_token = undefined,
-            user.password_reset_expire = undefined
+            user.password_reset_expire = undefined;
         await user.save({ validateBeforeSave: false });
         next(new AppError("There was an error sending email. Try again later!"));
     }
-})
+});
 
 exports.reset_password = catchAync(async (req, res, next) => {
 
@@ -167,7 +197,6 @@ exports.reset_password = catchAync(async (req, res, next) => {
     create_send_token(user, 200, res);
 
 });
-
 
 exports.update_password = catchAync(async (req, res, next) => {
     const user = await User.findById(req.user.id).select('+password');

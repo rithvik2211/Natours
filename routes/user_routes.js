@@ -4,7 +4,6 @@ const authControllers = require('./../controllers/auth_controller')
 const userControllers = require('./../controllers/user_controller')
 
 const router = express.Router();
-
 router.post('/signup', authControllers.signup);
 router.post('/login', authControllers.login);
 router.post('/forgot-password', authControllers.forgot_password);
@@ -12,10 +11,7 @@ router.patch('/reset-password/:token', authControllers.reset_password);
 
 router.use(authControllers.protect)
 router.get('/me', userControllers.get_me, userControllers.get_user);
-
-
 router.patch('/update-password', authControllers.update_password);
-
 router.patch('/update-me', userControllers.update_me);
 router.delete('/delete-me', userControllers.delete_me);
 

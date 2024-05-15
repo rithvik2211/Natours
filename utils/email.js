@@ -15,9 +15,9 @@ const send_email = async options => {
         to: options.email,
         subject: options.subject,
         text: options.message
-    }
+    };
 
     await transport.sendMail(mail_optns);
-}
+};
 
 module.exports = send_email;

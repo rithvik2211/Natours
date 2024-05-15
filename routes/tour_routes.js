@@ -12,12 +12,13 @@ const router = express.Router();
 router.use('/:tourId/reviews', review_router);
 
 router.route('/top-5-cheap').get(tourController.alias_top_tours, tourController.get_all_tours);
-
-
 router.route('/tour-stats').get(auth_controller.protect, tourController.get_tour_stats);
 router.route('/monthly-plans/:year').get(tourController.get_monthly_plan);
 router.route('/error').get(tourController.genrate_error);
 
+
+router.route('/tours-within/:distance/centre/:latlng/unit/:unit').get(tourController.get_tours_within);
+router.route('/distances/:latlng/unit/:unit').get(tourController.get_distances);
 
 router
     .route('/')
